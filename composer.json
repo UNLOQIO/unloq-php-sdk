@@ -1,0 +1,30 @@
+{
+    "name": "unloq/unloq-php-sdk",
+    "description": "UNLOQ PHP SDK provides methods for all of UNLOQ API functionalities",
+    "keywords": ["UNLOQ", "Authentication", "UNLOQ Two Factor Authentication", "Two Factor Authentication", "Multi Factor Authentication", "2fa", "php 2fa"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Florin Popescu",
+            "email": "florin@unloq.io"
+        }
+    ],
+    "type": "project",
+    "require": {
+		"php": ">=5.6",
+        "guzzlehttp/guzzle": "~6.0"
+    },
+	"require-dev": {
+		"phpunit/phpunit": "5.7.*"
+    },
+	"autoload": {
+        "psr-4": {
+            "Unloq\\": "src/Unloq"
+        }
+    },
+	"autoload-dev": {
+        "psr-4": {
+            "Unloq\\Tests\\": "tests/"
+        }
+    }
+}
