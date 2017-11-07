@@ -58,11 +58,11 @@ class Base
             $message = json_decode($e->getResponse()->getBody()->getContents());
             $errorCode = 'SERVER.ERROR';
             $errorMessage = 'An unexpected error occurred';
-        } catch (\GuzzleHttp\Exception\ConnectException $e){
+        } catch (\GuzzleHttp\Exception\RequestException $e){
             $code = $e->getCode();
-            $message = json_decode($e->getResponse()->getBody()->getContents());
-            $errorCode = 'SERVER.ERROR';
-            $errorMessage = 'An unexpected error occurred';
+            $message = 'An unexpected network error occurred';
+            $errorCode = 'NETWORK.ERROR';
+            $errorMessage = 'An unexpected network error occurred';
         }
 
         $return = [
