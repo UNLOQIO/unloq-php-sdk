@@ -9,7 +9,6 @@ Develop passwordless authentication for Laravel framework using UNLOQ.io Multi-f
         - [Passwordless Authentication](#passwordless-authentication)
     - [Admin level](#admin-level)
         - [Auth Settings](#auth-settings)
-        - [Organisation Details](#organisation-details)
         - [Mobile App customisation](#mobile-app-customisation)
         - [Firewall](#firewall)
         - [Notifications](#notifications)
@@ -24,7 +23,24 @@ Develop passwordless authentication for Laravel framework using UNLOQ.io Multi-f
 
 <a name="installation"></a>
 ## Installation and setup
-We need to install the Laravel framework, scaffold basic auth and install UNLOQ PHP SDK. The library will enable us to take advantage of the UNLOQ API and implement passwordless Authentication.
+We need to :
+- install the Laravel framework:
+
+```php
+laravel new laravel2fa
+```
+
+- scaffold basic auth:
+
+```php
+php artisan make:auth
+```
+
+- and install UNLOQ PHP SDK. The library will enable us to take advantage of the UNLOQ API and implement passwordless Authentication:
+
+```php
+composer require unloq/unloq-php-sdk
+```
 
 <a name="implementation"></a>
 ## Implementation
@@ -39,6 +55,18 @@ The [Admin level](#admin-level) will help you go deeper with UNLOQ, allowing you
 <a name="devpasswordless"></a>
 #### Passwordless Authentication
 We'll be implementing a passwordless registration and login, for the users of the application, overriding some of the Laravel's functionalities. We'll do that in such way that later we'll be able to allow password authentication too. That in the administrative dashboard that will be building to take advantage of UNLOQ features.
+
+***VERY IMPORTANT*** 
+
+Should you chose to go with this passwordless system, you will have to decide how to handle the rest of auth routes. By default, Laravel will add, when scaffolding authentication, the following line to routes/web.php :
+```php
+Auth::routes();
+```
+This will load the authentication routes, that can be found here
+> vendor/laravel/framework/src/Illuminate/Routing/Router.php
+
+within the auth() method. You will need to decide what to do with the unused routes.
+
 ##### The registration
 In order to have a passwordless authentication, we need to have a passwordless registration. For that we'll need to 
 allow users to register, and send them a login link to the email. 
@@ -127,10 +155,10 @@ public function register(Request $request)
 
 > app/Http/Controllers/Unloq/UnloqAuthController.php
  
-- and add the method authenticate() which will enable us to authenticate users through UNLOQ:
+- and add the method authenticate() which will use later when we want to send authentication requests:
 
 ```php
-public function authenticate($email, $method = null)
+public function authenticate($email, $method = null, $token = null)
 {
     $unloqClient = new Unloq(env('UNLOQ_API_KEY'));
 
@@ -138,6 +166,9 @@ public function authenticate($email, $method = null)
     $payload->setEmail($email)
         ->setMethod(isset($method) ? $method : 'UNLOQ')
         ->setIp($_SERVER['REMOTE_ADDR']);
+
+    if(isset($token))
+        $payload->setToken($token);
 
     return $unloqClient->authenticate($payload);
 }
@@ -162,7 +193,7 @@ The customisation of the registration is for you to implement as it best fits yo
 
 
 ##### The login
-###### 1. EMAIL login
+###### 1. Email login ( "EMAIL" authentication method)
 Now that we've managed to implement the registration and send a login link to email used to register, let's login the user that just registered.
 
 Let's add :
@@ -232,19 +263,410 @@ This only covers the login of the user that just registered. In order to make av
     - use the following request `(new UnloqAuthController)->authenticate($request->input('email'), 'EMAIL');`;
     - redirect the user to a view where to inform him to visit his email account to login;
 - check your email and visit the login link to get logged in;
-- THAT'S IT :).
 
-###### 2. Push notification login
-Enable authenticated user to login using Push notifications and UNLOQ mobile app. 
+**LET'S DO IT :)**
 
-IN PROGRESS
+The following controller handles authentication :
+
+> app/Http/Controllers/Auth/LoginController.php
+
+You won't see too much code as it actually uses a Trait which contains the required methods for login `use AuthenticatesUsers;`. So in order to customize our login with:
+- validating the email address used for login;
+- check if the user exists in our DB and :
+    - if exists, send the login email to the user's email and redirect to a success page;
+    - if it doesn't exist show an error message;
+
+we need to copy some methods from the trait, and paste them in LoginController.php to modify them as follows:
+
+```php
+public function login(Request $request)
+{
+    $this->validateLogin($request);
+
+    if ($this->hasTooManyLoginAttempts($request)) {
+        $this->fireLockoutEvent($request);
+
+        return $this->sendLockoutResponse($request);
+    }
+
+    // if ($this->attemptLogin($request)) {
+    //    return $this->sendLoginResponse($request);
+    // }
+
+    // we override the default authentication, with the flow below
+    $authenticate = (new UnloqAuthController)->authenticate($request->input('email'), 'EMAIL');
+
+    // if the request is successful, we are going to reload
+    // the login page with a variable set to true, which will
+    // determine the output of the login page
+    if ($authenticate->httpCode === 200) {
+        return view('auth.login')->with([
+            'loginLinkSent' => true
+        ]);
+    }
+
+    $this->incrementLoginAttempts($request);
+
+    //return $this->sendFailedLoginResponse($request);
+
+    // if anything goes wrong with our authentication request,
+    // we just throw back the error that occurred during the 
+    // authentication request
+    throw ValidationException::withMessages([
+        $this->username() => $authenticate->errorMessage,
+    ]);
+}
+
+protected function validateLogin(Request $request)
+{
+    $this->validate($request, [
+        $this->username() => 'required|string|exists:users',
+        //'password' => 'required|string',
+    ]);
+}
+```
+
+As mentioned previously, we will not delete everything related to passwords, if we want to allow passwords at a certain point too.
+
+What we did is we override the login method to send an authentication request to UNLOQ Api, instead of validating username/password.
+
+Upon a positive http response, we proceed to show the login page without the login form, but with a success message. For this please update the file
+
+> resources/views/auth/login.blade.php
+ 
+as follows:
+```php
+@if(!isset($loginLinkSent))
+    <div class="panel panel-default">
+        <div class="panel-heading">Login</div>
+
+        <div class="panel-body">
+            <form class="form-horizontal" method="POST" action="{{ route('login') }}">
+                {{ csrf_field() }}
+
+            ...
+          
+            </form>
+    </div>
+</div>
+@else
+    <div>
+        <h5>Your login link has been sent, please check your email.</h5>
+    </div>
+@endif
+```
+
+This will show the login form when you arrive at the login page, but when it's loaded containing the variable `$loginLinkSent`, it will just show a success message.
+
+And we're all set :). GIVE IT A TRY!
+
+###### 2. Push notification login ("UNLOQ" authentication method)
+Enable authenticated user to login using Push notifications and UNLOQ mobile app.
+
+In order to do this, let's add an Authentication settings page where the logged user can chose his own UNLOQ method to login.
+
+Let's update the layout view for the application, and add the link to the Authentication settings page:
+
+>resources/views/layouts/app.blade.php
+ 
+add the following lines just above the Log out link :
+
+```php
+<li>
+    <a href="{{ route('unloq-settings') }}">Auth</a>
+</li>
+```
+
+next let's add to the routes file the route above and also the route to save UNLOQ settings:
+
+>routes/web.php
+ 
+```php
+Route::get('/unloq/settings', 'Unloq\UnloqController@showUnloqSettingsForm')->name('unloq-settings');
+Route::post('/unloq/settings', 'Unloq\UnloqController@saveUnloqSettings');
+```
+
+Now all we need is a controller and view 
+
+> app/Http/Controllers/Unloq/UnloqController.php
+
+> resources/views/unloq/settings.blade.php
+
+let's put some code inside the controller in order to :
+
+- be accessible only to the logged users;
+- render the form where the authentication settings will be displayed;
+- store the UNLOQ authentication settings;
+- while choosing any other method beside **EMAIL**, we need to check if the user has synchronized any device.
+
+
+```php
+namespace App\Http\Controllers\Unloq;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Auth;
+use Unloq\Api\Contracts\Approval\Authenticate;
+use Unloq\Api\Contracts\Enrollment\Enroll;
+use Unloq\Unloq;
+
+class UnloqController extends Controller
+{
+    public function __construct()
+    {
+        // we make sure this is only accessible
+        // if the user is authenticated
+        $this->middleware('auth');
+    }
+
+    public function showUnloqSettingsForm()
+    {
+        return view('unloq.settings');
+    }
+
+    public function saveUnloqSettings(Request $request)
+    {
+        $this->validate($request, [
+            'unloq_method' => 'in:EMAIL,UNLOQ,OTP'
+        ]);
+
+        $user = Auth::user();
+        $method = $request->input('unloq_method');
+
+        if($method == 'UNLOQ' && !$this->userHasDevicePaired($user->email))
+            return redirect('/unloq/pair');
+
+        $user->unloq_method = $method;
+        $user->save();
+
+        $request->session()->flash('unloqSettings', 'Authentication settings saved!');
+
+        return view('unloq.settings');
+    }
+
+    protected function userHasDevicePaired($email)
+    {
+        $unloqClient = new Unloq(env('UNLOQ_API_KEY'));
+
+        $payload = new Enroll();
+        $payload->setEmail($email);
+
+        $response = $unloqClient->isEnrolled($payload);
+
+        if($response->httpCode === 200 && isset($response->responseMessage->result))
+            if($response->responseMessage->result->has_device === true)
+                return true;
+
+        return false;
+    }
+}
+```
+
+and add the following code to the view:
+
+```php
+@extends('layouts.app')
+
+@section('content')
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8 col-md-offset-2">
+                <div class="panel panel-default">
+                    <div class="panel-heading">Authentication options</div>
+
+                    <div class="panel-body">
+                        @if (session('status'))
+                            <div class="alert alert-success">
+                                {{ session('status') }}
+                            </div>
+                        @endif
+
+                        <form>
+                            <fieldset class="form-group">
+                                <div class="row">
+                                    <div class="col-sm-10">
+                                        <div class="form-check">
+                                            <label class="form-check-label">
+                                                <input class="form-check-input" type="radio" name="unloq_method" value="EMAIL" {{ Auth::user()->unloq_method === 'EMAIL' ? 'checked' : '' }}>
+                                                Email login (default)
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <label class="form-check-label">
+                                                <input class="form-check-input" type="radio" name="unloq_method" value="UNLOQ" {{ Auth::user()->unloq_method === 'UNLOQ' ? 'checked' : '' }}>
+                                                Push notifications to your UNLOQ mobile app
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </fieldset>
+                            <hr>
+                            <button type="submit" class="btn btn-primary">Submit</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+
+```
+Now let's update the database to store the method that the user wants to use :
+
+```php
+php artisan make:migration add_unloq_method_to_users
+```
+
+and fill it with the code below
+
+```php
+public function up()
+{
+    Schema::table('users', function ($table) {
+        $table->string('unloq_method', 24)->default('EMAIL');
+    });
+}
+
+...
+
+public function down()
+{
+    Schema::table('users', function ($table) {
+        $table->dropColumn('unloq_method');
+    });
+}
+```
+
+now just update the database:
+```php
+php artisan migrate
+```
+
+In order to use any other authentication method but **Email login**, the user has to:
+- download the UNLOQ Mobile app;
+- pair the mobile app with our web application;
+
+Let's a new route
+```php
+Route::get('/unloq/pair', 'Unloq\UnloqController@showUnloqPairForm');
+```
+
+update our UnloqController.php with a new method:
+
+```php
+public function showUnloqPairForm()
+{
+    $unloqClient = new Unloq(env('UNLOQ_API_KEY'));
+
+    $payload = new Enroll();
+    $payload->setEmail(Auth::user()->email);
+
+    $response = $unloqClient->enroll($payload);
+
+    if($response->httpCode === 200 && isset($response->responseMessage->result))
+        $qrCodeUrl = $response->responseMessage->result->qr_url;
+    else
+        $qrCodeUrl = false;
+
+    return view('unloq.pair')->with([
+        'qrCodeUrl' => $qrCodeUrl
+    ]);
+}
+```
+
+and a new view 
+
+> resources/views/unloq/pair.blade.php
+
+with the following code:
+
+```php
+@extends('layouts.app')
+
+@section('content')
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8 col-md-offset-2">
+                <div class="panel panel-default">
+                    <div class="panel-heading">Pair device</div>
+
+                    <div class="panel-body">
+                        @if (session('status'))
+                            <div class="alert alert-success">
+                                {{ session('status') }}
+                            </div>
+                        @endif
+                        @if ($qrCodeUrl)
+                            <img src="{{$qrCodeUrl}}" alt="UNLOQ QR Image" class="img-thumbnail">
+                            <p>Download UNLOQ Mobile app and scan the QR Code</p>
+                            <a href="{{route('unloq-settings')}}">I paired my device</a>
+                        @else
+                            <p>There was an error while retrieving the QR Image, please refresh the page.</p>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+```
+
+This will display the QR image you require for the logged user to synchronize his device.
+ 
+All we need now is to update the login method to:
+
+ - check and see what authentication method has the current user set for his account;
+ - depending on the method chosen, make the appropriate authentication request to UNLOQ Api;
+ 
+```php
+...
+use App\User;
+use Auth;
+...
+public function login(Request $request)
+{
+    ...
+
+    // we override with the flow below default authentication
+    $email = $request->input('email');
+    $user = User::where(['email' => $email])->first();
+
+    $authenticate = (new UnloqAuthController)->authenticate($email, $user->unloq_method);
+
+    // if the request is successful, we are going to reload
+    // the login page with a variable set to true, which will
+    // determine the output of the login page
+    if ($authenticate->httpCode === 200) {
+        if($user->unloq_method === 'UNLOQ'){
+            Auth::login($user);
+            return redirect('/home');
+        }
+
+        return view('auth.login')->with([
+            'loginLinkSent' => true
+        ]);
+    }
+
+    $this->incrementLoginAttempts($request);
+
+    //return $this->sendFailedLoginResponse($request);
+
+    // if anything goes wrong with our authentication request,
+    // we just throw back the error that occurred
+    throw ValidationException::withMessages([
+        $this->username() => $authenticate->errorMessage,
+    ]);
+}
+```
+
+Now all you need is to give it a try and enjoy your passwordless Laravel application.
 
 <a name="devadminlevel"></a>
 ### Admin Level
 
 <a name="authsettings"></a>
 #### Auth Settings
-Setup Passwordless/Multifactor/Password Authentication. Enable different UNLOQ auth methods : EMAIL, OTP, Push Notifications.
+Passwordless/Multifactor/Password Authentication. Enable for your users different authentication methods.
 
 IN PROGRESS
 
@@ -268,7 +690,7 @@ IN PROGRESS
 
 <a name="references"></a>
 ## References & Thanks
-@Laravel for a great [Documentation](https://laravel.com/docs/5.5).
+[@Laravel](https://laravel.com/) for a great [Documentation](https://laravel.com/docs/5.5).
 
 [@Christopher Thomas](https://github.com/cwt137) for a great [2fa Laravel Tutorial](https://www.sitepoint.com/2fa-in-laravel-with-google-authenticator-get-secure/).
 
