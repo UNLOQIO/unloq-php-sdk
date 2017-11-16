@@ -22,7 +22,7 @@ Using our UNLOQ PHP SDK the following implementations are available:
    
 ## Using the SDK
 
-### Initiating the library
+### Instantiate the library
 Use an API KEY to initiate the SDK's UNLOQ client:
 
 ```

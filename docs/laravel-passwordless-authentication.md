@@ -1,24 +1,22 @@
-UNLOQ PHP SDK - Laravel integration
+UNLOQ PHP SDK - Laravel passwordless authentication
 ===================================
-Develop passwordless authentication for Laravel framework using UNLOQ.io Multi-factor Authentication Solution. Understand [UNLOQ in 40 seconds](https://vimeo.com/151232399).
+Develop passwordless authentication for Laravel framework using UNLOQ.io Multi-factor Authentication Solution. 
+
+Before continuing, just take a look at [UNLOQ in 40 seconds](https://vimeo.com/151232399).
 
 - [Requirements](#requirements)
 - [Installation and setup](#installation-and-setup)
-- [Implementation](#implementation)
-    - [User level](#user-level)
-        - [Passwordless Authentication](#passwordless-authentication)
-    - [Admin level](#admin-level)
-        - [Auth Settings](#auth-settings)
-        - [Mobile App customisation](#mobile-app-customisation)
-        - [Firewall](#firewall)
-        - [Notifications](#notifications)
+- [Implement passwordless authentication](#implement-passwordless-authentication)
+    - [EMAIL method - unique token sent to email](#1-email-method-unique-token-sent-to-email)
+    - [UNLOQ method - Mobile app Push Notifications](#2-unloq-method-mobile-app-push-notifications)
+- [Implement UNLOQ as second factor + Managing authentication options](#implement-unloq-as-second-factor-managing-authentication-options)    
 - [References & Thanks](#references-thanks)
 
 <a name="requirements"></a>
 ## Requirements
 - a Smartphone with UNLOQ application installed;
 - an API key from a custom web application from your UNLOQ account. You can read more on [general concerns](general.md).  
-- Homestead would be great but you can adapt everything from the tutorial;
+- Homestead would be great but you can adapt to your own local environment;
 - Laravel Framework 5.5.
 
 <a name="installation"></a>
@@ -43,17 +41,9 @@ composer require unloq/unloq-php-sdk
 ```
 
 <a name="implementation"></a>
-## Implementation
-This chapter will cover basic passwordless implementation as well as an administrative interface.
- 
-The [User level](#user-level) (basic passwordless implementation) will allow you to take immediate advantage of UNLOQ's Authentication benefits.
- 
-The [Admin level](#admin-level) will help you go deeper with UNLOQ, allowing you to take full advantage fo the API an create your own administrative interface. The interface will interact with most important features of UNLOQ, bringing even more security and customisation to your new improved authentication system.
-
-<a name="devuserlevel"></a>
-### User Level
-<a name="devpasswordless"></a>
-#### Passwordless Authentication
+## Implement passwordless authentication
+<a name="email-method---unique-token-send-to-email"></a>
+#### 1. EMAIL method - unique token sent to email
 We'll be implementing a passwordless registration and login, for the users of the application, overriding some of the Laravel's functionalities. We'll do that in such way that later we'll be able to allow password authentication too. That in the administrative dashboard that will be building to take advantage of UNLOQ features.
 
 ***VERY IMPORTANT*** 
@@ -62,7 +52,7 @@ Should you chose to go with this passwordless system, you will have to decide ho
 ```php
 Auth::routes();
 ```
-This will load the authentication routes, that can be found here
+This will load the authentication routes, that can be found here:
 > vendor/laravel/framework/src/Illuminate/Routing/Router.php
 
 within the auth() method. You will need to decide what to do with the unused routes.
@@ -360,7 +350,7 @@ This will show the login form when you arrive at the login page, but when it's l
 
 And we're all set :). GIVE IT A TRY!
 
-###### 2. Push notification login ("UNLOQ" authentication method)
+#### 2. UNLOQ method - Mobile app Push Notifications
 Enable authenticated user to login using Push notifications and UNLOQ mobile app.
 
 In order to do this, let's add an Authentication settings page where the logged user can chose his own UNLOQ method to login.
@@ -659,34 +649,13 @@ public function login(Request $request)
 }
 ```
 
-Now all you need is to give it a try and enjoy your passwordless Laravel application.
+Now all you need is to **give it a try and enjoy** your passwordless Laravel application.
 
-<a name="devadminlevel"></a>
-### Admin Level
+## Implement UNLOQ as second factor + Managing authentication options
 
-<a name="authsettings"></a>
-#### Auth Settings
-Passwordless/Multifactor/Password Authentication. Enable for your users different authentication methods.
-
-IN PROGRESS
-
-<a name="devcustomisation"></a>
-#### Mobile App Customisation
-Customisation of the Mobile App look and feeling.
-
-IN PROGRESS
-
-<a name="devfirewall"></a>
-#### Firewall
-ALLOW/DENY authentication to your system from different IP addresses OR ranges. CIDR rules apply.
-
-IN PROGRESS
-
-<a name="devnotifications"></a>
-#### Notifications
-Send push notifications to all users of your system to notify them of most urgent news.
-
-IN PROGRESS
+You can follow up with the next tutorial ```larave-second-factor-authentication.md``` and learn how to :
+- build and administrative interface to manage authentication options for the users;
+- re-enable password but only to enforce better authentication through UNLOQ as second factor of authentication.
 
 <a name="references"></a>
 ## References & Thanks
