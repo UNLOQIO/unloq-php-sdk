@@ -14,7 +14,7 @@ use Unloq\Api\Common\UnloqModel;
  * @property string content                                 - Required
  * @property integer level                                  - Required
  * @property boolean broadcast                              - Required
- * @property array users                                    - Required
+ * @property array receivers                                - Required
  * @property array groups                                   - Required
  * @property string close_text                              - Required
  * @property string submit_text                             - Required
@@ -149,19 +149,19 @@ class Notification extends UnloqModel
     /**
      * @return array
      */
-    public function getUsers()
+    public function getReceivers()
     {
-        return $this->users;
+        return $this->receivers;
     }
 
     /**
-     * @param array $users
+     * @param array $receivers
      *
      * @return $this
      */
-    public function setUsers($users)
+    public function setReceivers($receivers)
     {
-        $this->users = $users;
+        $this->receivers = $receivers;
 
         return $this;
     }
