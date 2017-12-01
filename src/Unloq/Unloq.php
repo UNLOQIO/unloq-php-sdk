@@ -579,6 +579,17 @@ class Unloq extends Base {
         return $this->execute('DELETE', 'notifications/' . $id);
     }
 
+    /**
+     * @param $notificationId
+     * @param $itemId
+     *
+     * @return object
+     */
+    public function deleteNotificationItem($notificationId, $itemId)
+    {
+        return $this->execute('DELETE', 'notifications/' . $notificationId . '/' . $itemId);
+    }
+
     /**************************** REPORTS *****************************/
 
     /**
