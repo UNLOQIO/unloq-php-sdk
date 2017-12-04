@@ -1,4 +1,4 @@
-UNLOQ PHP SDK - Laravel second factor authentication + + Managing authentication options
+UNLOQ PHP SDK - Laravel second factor authentication + Managing authentication options
 ========================================================================================
 This tutorial is a followup on the first one ```laravel-passwordless-authentication.md``` and will cover:
 
@@ -608,7 +608,13 @@ public function login(Request $request)
             $this->incrementLoginAttempts($request);
 
             return $this->sendFailedLoginResponse($request);
-        }
+        } else {
+             // if the attemptLogin method returned true, it also
+             // logged the user within the system, which we don't
+             // want at this point as we need to also validate him
+             // trough UNLOQ
+             Auth::logout();
+         }
     }
 
     // then we continue the authentication flow through UNLOQ
