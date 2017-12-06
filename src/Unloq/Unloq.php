@@ -441,7 +441,7 @@ class Unloq extends Base {
             $action = $action . '?page=' . $page;
 
         if($limit !== null)
-            $action = $limit . '?limit=' . $limit;
+            $action = $action . '?limit=' . $limit;
 
         return $this->execute('GET', $action);
     }
@@ -534,7 +534,7 @@ class Unloq extends Base {
             $action = $action . '?page=' . $page;
 
         if($limit !== null)
-            $action = $limit . '?limit=' . $limit;
+            $action = $action . '?limit=' . $limit;
 
         return $this->execute('GET', $action);
     }
@@ -657,7 +657,7 @@ class Unloq extends Base {
             $action = $action . '?page=' . $page;
 
         if($limit !== null)
-            $action = $limit . '?limit=' . $limit;
+            $action = $action . '?limit=' . $limit;
 
         return $this->execute('GET', $action);
     }
@@ -697,7 +697,7 @@ class Unloq extends Base {
             $action = $action . '?page=' . $page;
 
         if($limit !== null)
-            $action = $limit . '?limit=' . $limit;
+            $action = $action . '?limit=' . $limit;
 
         return $this->execute('GET', $action);
     }
@@ -717,7 +717,7 @@ class Unloq extends Base {
             $action = $action . '?page=' . $page;
 
         if($limit !== null)
-            $action = $limit . '?limit=' . $limit;
+            $action = $action . '?limit=' . $limit;
 
         return $this->execute('GET', $action);
     }
@@ -746,7 +746,7 @@ class Unloq extends Base {
             $action = $action . '?page=' . $page;
 
         if($limit !== null)
-            $action = $limit . '?limit=' . $limit;
+            $action = $action . '?limit=' . $limit;
 
         return $this->execute('GET', $action);
     }
@@ -797,7 +797,7 @@ class Unloq extends Base {
             $action = $action . '?page=' . $page;
 
         if($limit !== null)
-            $action = $limit . '?limit=' . $limit;
+            $action = $action . '?limit=' . $limit;
 
         return $this->execute('GET', $action);
     }
