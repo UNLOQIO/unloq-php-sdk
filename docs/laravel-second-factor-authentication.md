@@ -634,7 +634,7 @@ public function login(Request $request)
     // the login page with a variable set to true, which will
     // determine the output of the login page
     if ($authenticate->httpCode === 200) {
-        if($user->unloq_method === 'UNLOQ'){
+        if($unloqMethod === 'UNLOQ'){
             Auth::login($user);
             return redirect($this->redirectTo());
         }
